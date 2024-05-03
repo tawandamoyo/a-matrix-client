@@ -93,4 +93,24 @@ async def retry(limit: int, req_func, *args, **kwargs) -> aiohttp.ClientResponse
             # we are rate limited -- wait for the requested amount
             # in this case, if the delay would take us past our limit, there's 
             # no point in tryin g again because the server says it will still be 
-            # rejected, so just return 
+            # rejected, so just return
+            
+            if time.monotonic_ns() + delay * 1_000_000 > end_time: 
+                return resp
+            await asyncio.sleep(delay)
+            continue
+        elif(
+            "errcode" in result
+            and result["errcode"] == "M_LIMIT_EXCEEDED"
+            and type(result.get("retry_after_ms")) == int
+        ):
+            await resp.release()
+            delay_ms = result["retry_after_ms"]
+            if time.monotonic_ns() + delay_ms * 1_000_000 > end_time:
+                return resp
+            await asyncio.sleep(math.ceil(delay_ms / 1_000))
+            continue
+        else:
+            # some other error, so return and let the application deal with it
+            return resp
+

@@ -11,4 +11,8 @@ class MatrixError(RuntimeError):
     def __init__(self, code, body):
         self.code = code
         self.body = body
-        
+
+
+class InvalidResponseError(RuntimeError):
+    """The server's response did not match the expected format"""
+    pass
